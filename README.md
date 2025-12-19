@@ -127,11 +127,13 @@ The ready application will be in the \`build/bin/\` folder.
 If you see "macOS cannot verify the developer":
 
 **Option 1 (Easier):**
+
 1. Right-click (or Control+click) on the app
 2. Select **Open**
 3. Click **Open** in the dialog
 
 **Option 2:**
+
 1. Go to **System Settings** → **Privacy & Security**
 2. Scroll down and click **Open Anyway** next to the blocked app message
 3. Enter your password if prompted

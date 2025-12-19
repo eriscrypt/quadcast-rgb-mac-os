@@ -66,7 +66,7 @@ jobs:
         run: |
           # Ad-hoc signing to reduce some warnings
           codesign --force --deep --sign - "build/bin/QuadCast RGB.app"
-          
+
       - name: Create ZIP archive
         run: |
           cd build/bin
