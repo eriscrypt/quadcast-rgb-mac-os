@@ -26,7 +26,7 @@ echo "🎨 Creating application icon..."
 if [ -f "$ICON_SCRIPT" ]; then
     TEMP_ICON="/tmp/quadcast_app_icon.icns"
     "$ICON_SCRIPT" "$TEMP_ICON"
-    
+
     # Embed icon in application
     if [ -f "$TEMP_ICON" ]; then
         cp "$TEMP_ICON" "$APP_PATH/Contents/Resources/iconfile.icns"

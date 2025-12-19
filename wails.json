@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "quadcast-ui",
+  "name": "QuadCast RGB",
   "outputfilename": "QuadCast RGB",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",

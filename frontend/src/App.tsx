@@ -25,8 +25,7 @@ export default function App() {
     const [debugInfo, setDebugInfo] = useState('');
     const [isLedOff, setIsLedOff] = useState(false);
 
-    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingColorRef = useRef<string | null>(null);
+    const lastSavedColorRef = useRef<string | null>(null);
 
     useEffect(() => {
         checkDependencies();
@@ -97,22 +96,21 @@ export default function App() {
         // Immediately update UI state
         setIsLedOff(false);
 
+        // Save first, then apply to device
+        if (save) {
+            const colorToSave = hex.slice(1);
+            if (lastSavedColorRef.current !== colorToSave) {
+                lastSavedColorRef.current = colorToSave;
+                try {
+                    await SaveColorSetting(colorToSave);
+                } catch (err) {
+                    console.error('Error saving color:', err);
+                }
+            }
+        }
+
         try {
             await SetColor(r, g, b);
-
-            if (save) {
-                pendingColorRef.current = hex.slice(1);
-
-                if (saveTimeoutRef.current) {
-                    clearTimeout(saveTimeoutRef.current);
-                }
-
-                saveTimeoutRef.current = setTimeout(async () => {
-                    if (pendingColorRef.current) {
-                        await SaveColorSetting(pendingColorRef.current);
-                    }
-                }, 300);
-            }
         } catch (err) {
             console.error('Error setting color:', err);
         }
