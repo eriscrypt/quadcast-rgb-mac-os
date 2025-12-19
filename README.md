@@ -68,7 +68,7 @@ nano create_icon.sh
 3. **Connect HyperX QuadCast** to your computer
 4. **Click "Connect Device"**
 5. **Choose a color** - it will be automatically saved
-6. **Donebuild* The color is applied to the microphone
+6. \*_Donebuild_ The color is applied to the microphone
 
 ## How It Works
 
@@ -134,16 +134,6 @@ brew install quadcastrgb
 
 ```bash
 system_profiler SPUSBDataType | grep -i hyperx
-```
-
-### Color doesn't change
-
-1. Make sure other programs (e.g., NGenuity) are not using the microphone
-2. Try disconnecting and reconnecting the microphone
-3. Check if quadcastrgb works from the terminal:
-
-```bash
-quadcastrgb solid ff0000
 ```
 
 ## License
