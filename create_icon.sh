@@ -13,9 +13,29 @@ cat > /tmp/mic_icon.svg << 'SVGEOF'
 </svg>
 SVGEOF
 
-# Create PNG files of different sizes
-for size in 16 32 64 128 256 512 1024; do
-  sips -s format png /tmp/mic_icon.svg --out "$ICON_DIR/icon_${size}x${size}.png" -z $size $size 2>/dev/null
+# Output directory (default to build/)
+OUTPUT_DIR="${1:-build}"
+
+# First create a base 1024x1024 PNG from SVG using qlmanage (works on macOS)
+qlmanage -t -s 1024 -o /tmp /tmp/mic_icon.svg > /dev/null 2>&1
+
+# If qlmanage worked, rename the file
+if [ -f /tmp/mic_icon.svg.png ]; then
+  mv /tmp/mic_icon.svg.png "$ICON_DIR/icon_1024x1024.png"
+else
+  # Fallback: try using sips to convert SVG directly to PNG
+  sips -s format png /tmp/mic_icon.svg --out "$ICON_DIR/icon_1024x1024.png" -z 1024 1024 > /dev/null 2>&1
+fi
+
+# If we still don't have the base image, exit
+if [ ! -f "$ICON_DIR/icon_1024x1024.png" ]; then
+  echo "❌ Error: Could not create base PNG from SVG"
+  exit 1
+fi
+
+# Create PNG files of different sizes from the 1024x1024 base
+for size in 16 32 64 128 256 512; do
+  sips -z $size $size "$ICON_DIR/icon_1024x1024.png" --out "$ICON_DIR/icon_${size}x${size}.png" > /dev/null 2>&1
 done
 
 # Create Retina versions
@@ -24,11 +44,8 @@ for size in 16 32 128 256 512; do
   cp "$ICON_DIR/icon_${size2}x${size2}.png" "$ICON_DIR/icon_${size}x${size}@2x.png" 2>/dev/null
 done
 
-# Output directory (default to build/)
-OUTPUT_DIR="${1:-build}"
-
 # Create .icns file
-iconutil -c icns "$ICON_DIR" -o "$OUTPUT_DIR/appicon.icns" 2>/dev/null
+iconutil -c icns "$ICON_DIR" -o "$OUTPUT_DIR/appicon.icns"
 
 if [ $? -eq 0 ]; then
   echo "✅ Icon created: $OUTPUT_DIR/appicon.icns"
