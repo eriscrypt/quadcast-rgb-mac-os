@@ -20,7 +20,7 @@ func main() {
 	err := wails.Run(&options.App{
 		Title:  "QuadCast RGB",
 		Width:  600,
-		Height: 400,
+		Height: 540,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

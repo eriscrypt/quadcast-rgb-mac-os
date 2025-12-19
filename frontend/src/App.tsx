@@ -9,6 +9,7 @@ import {
     LoadSettings,
     SaveColorSetting,
 } from '../wailsjs/go/main/App';
+import { TitleBar, ColorWheel, ColorPresets, Button, DebugModal } from './components';
 
 type AppState = 'checking' | 'needsInstall' | 'needsHomebrew' | 'connecting' | 'connected' | 'error';
 
@@ -17,13 +18,12 @@ interface DependencyResult {
     message: string;
 }
 
-const PRESET_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
-
 export default function App() {
     const [state, setState] = useState<AppState>('checking');
     const [color, setColor] = useState('#ff0000');
     const [showDebug, setShowDebug] = useState(false);
     const [debugInfo, setDebugInfo] = useState('');
+    const [isLedOff, setIsLedOff] = useState(false);
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingColorRef = useRef<string | null>(null);
@@ -45,7 +45,7 @@ export default function App() {
                     setState('needsInstall');
                 }
             }
-        } catch (err) {
+        } catch {
             setState('error');
         }
     }
@@ -55,7 +55,7 @@ export default function App() {
             setState('checking');
             await InstallDependencies();
             await checkDependencies();
-        } catch (err) {
+        } catch {
             setState('error');
         }
     }
@@ -72,8 +72,6 @@ export default function App() {
 
             if (errorMsg.includes('not found')) {
                 setShowDebug(true);
-            } else {
-                console.error('Connection error:', err);
             }
         }
     }
@@ -95,6 +93,9 @@ export default function App() {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
+
+        // Immediately update UI state
+        setIsLedOff(false);
 
         try {
             await SetColor(r, g, b);
@@ -125,12 +126,13 @@ export default function App() {
     async function turnOff() {
         try {
             await Off();
+            setIsLedOff(true);
         } catch (err) {
             console.error('Error:', err);
         }
     }
 
-    async function showDebugInfo() {
+    async function handleShowDebug() {
         try {
             const devices = await GetUSBDevices();
             setDebugInfo(devices);
@@ -141,111 +143,111 @@ export default function App() {
 
     return (
         <div className="flex flex-col min-h-screen bg-bg">
-            {/* Drag region */}
-            <div
-                className="fixed top-0 z-10 flex items-center justify-center w-full border-b h-11 border-white/10 backdrop-blur-sm shrink-0"
-                style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
-            >
-                <h1 className="text-sm text-center text-white/60">HyperX QuadCast RGB Controller</h1>
+            <TitleBar status={state} />
 
-                {/* Status message */}
-                <div
-                    className={`w-2 h-2 rounded-full absolute right-5 ${
-                        state === 'connected'
-                            ? 'bg-green-500/75'
-                            : state === 'error'
-                              ? 'bg-red-500/75'
-                              : state === 'needsInstall' || state === 'needsHomebrew'
-                                ? 'bg-yellow-500/75'
-                                : 'bg-blue-500/75'
-                    }`}
-                >
-                    <pre className="text-sm whitespace-pre-wrap"></pre>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-center flex-1 p-5">
-                {/* Install button */}
-                {state === 'needsInstall' && (
-                    <button
-                        onClick={installDeps}
-                        className="w-full px-4 py-3 font-semibold transition-colors bg-yellow-500 rounded-lg cursor-pointer hover:bg-yellow-600"
-                    >
-                        Install Dependencies Automatically
-                    </button>
+            {/* Main content */}
+            <div className="flex flex-col items-center justify-center flex-1 px-6 pt-14">
+                {/* Setup screens */}
+                {(state === 'needsInstall' || state === 'needsHomebrew') && (
+                    <div className="w-full max-w-sm space-y-6 text-center">
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-amber-500/20">
+                            <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="mb-2 text-lg font-semibold text-white">Setup Required</h2>
+                            <p className="text-sm text-white/50">
+                                {state === 'needsHomebrew'
+                                    ? 'Please install dependencies manually, then click below.'
+                                    : 'Click below to automatically install required dependencies.'}
+                            </p>
+                        </div>
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            className="w-full"
+                            onClick={state === 'needsHomebrew' ? () => window.location.reload() : installDeps}
+                        >
+                            {state === 'needsHomebrew' ? "I've Installed Dependencies" : 'Install Dependencies'}
+                        </Button>
+                    </div>
                 )}
 
-                {/* Homebrew needed */}
-                {state === 'needsHomebrew' && (
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="w-full px-4 py-3 font-semibold transition-colors bg-blue-500 rounded-lg cursor-pointer hover:bg-blue-600"
-                    >
-                        I have installed the dependencies
-                    </button>
-                )}
-
-                {/* Debug button */}
-                {showDebug && state === 'error' && (
-                    <button
-                        onClick={showDebugInfo}
-                        className="w-full px-4 py-3 font-semibold transition-colors bg-gray-500 rounded-lg cursor-pointer hover:bg-gray-600"
-                    >
-                        🔍 Show USB Devices (Debug)
-                    </button>
-                )}
-
-                {/* Debug info modal */}
-                {debugInfo && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-                        <div className="bg-white text-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
-                            <h2 className="mb-4 text-xl font-bold">USB Devices (for debugging)</h2>
-                            <textarea readOnly value={debugInfo} className="w-full h-64 p-2 font-mono text-sm border rounded" />
-                            <button onClick={() => setDebugInfo('')} className="px-4 py-2 mt-4 text-white bg-indigo-500 rounded-lg">
-                                Close
-                            </button>
+                {/* Error screen */}
+                {state === 'error' && (
+                    <div className="w-full max-w-sm space-y-6 text-center">
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-red-500/20">
+                            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="mb-2 text-lg font-semibold text-white">Device Not Found</h2>
+                            <p className="text-sm text-white/50">Make sure your HyperX QuadCast is connected and powered on.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <Button variant="secondary" className="flex-1" onClick={() => window.location.reload()}>
+                                Retry
+                            </Button>
+                            {showDebug && (
+                                <Button variant="ghost" onClick={handleShowDebug}>
+                                    Debug
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
 
-                <div className="w-full p-4 text-white shadow-xl bg-white/10 backdrop-blur-lg rounded-2xl">
-                    {/* Color controls */}
-                    {state === 'connected' && (
-                        <div className="space-y-4">
-                            {/* Color picker */}
-                            <div className="flex items-center gap-4">
-                                <label>Choose color:</label>
-                                <input
-                                    type="color"
-                                    value={color}
-                                    onChange={(e) => handleColorChange(e.target.value)}
-                                    className="w-20 h-8 border-0 rounded cursor-pointer"
-                                />
-                            </div>
+                {/* Loading screen */}
+                {(state === 'checking' || state === 'connecting') && (
+                    <div className="space-y-4 text-center">
+                        <div className="w-12 h-12 mx-auto border-2 rounded-full border-white/10 border-t-accent animate-spin" />
+                        <p className="text-sm text-white/50">
+                            {state === 'checking' ? 'Checking dependencies...' : 'Connecting to device...'}
+                        </p>
+                    </div>
+                )}
 
-                            {/* Preset colors */}
-                            <div className="flex flex-wrap justify-center gap-3">
-                                {PRESET_COLORS.map((presetColor) => (
-                                    <button
-                                        key={presetColor}
-                                        onClick={() => handleColorChange(presetColor)}
-                                        className="w-12 h-4 transition-transform rounded-sm cursor-pointer border-white/30 hover:scale-110"
-                                        style={{ backgroundColor: presetColor }}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Turn off button */}
-                            <button
-                                onClick={turnOff}
-                                className="w-full px-4 py-1 text-sm transition-colors rounded-lg cursor-pointer bg-black/80 hover:bg-black/50"
-                            >
-                                Turn Off LED
-                            </button>
+                {/* Connected - Color controls */}
+                {state === 'connected' && (
+                    <div className="w-full max-w-sm space-y-8">
+                        {/* Color wheel */}
+                        <div className="flex justify-center">
+                            <ColorWheel value={color} onChange={handleColorChange} size={200} disabled={isLedOff} />
                         </div>
-                    )}
-                </div>
+
+                        {/* Presets */}
+                        <div className={`mt-10 space-y-2 transition-all duration-300 ${isLedOff ? 'opacity-30' : ''}`}>
+                            <p className="text-xs font-medium tracking-wide text-center uppercase text-white/40">Quick Colors</p>
+                            <ColorPresets activeColor={color} onSelect={handleColorChange} disabled={isLedOff} />
+                        </div>
+
+                        {/* Power button */}
+                        <Button
+                            variant={isLedOff ? 'ghost' : 'danger'}
+                            size="md"
+                            className="w-full"
+                            onClick={isLedOff ? () => applyColor(color) : turnOff}
+                        >
+                            {isLedOff ? 'Turn On LED' : 'Turn Off LED'}
+                        </Button>
+                    </div>
+                )}
             </div>
+
+            {/* Debug modal */}
+            {debugInfo && <DebugModal info={debugInfo} onClose={() => setDebugInfo('')} />}
         </div>
     );
 }
