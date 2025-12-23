@@ -110,14 +110,6 @@ The ready application will be in the \`build/bin/\` folder.
 4. Click "Connect Device"
 5. Choose the LED color
 
-## Technologies
-
-- [Wails](https://wails.io/) - framework for creating desktop applications
-- [QuadcastRGB](https://github.com/Ors1mer/QuadcastRGB) - utility for controlling QuadCast
-- Go - backend
-- Vanilla JS - frontend
-- CSS3 - styling
-
 ## Troubleshooting
 
 ### macOS blocks the app from opening
